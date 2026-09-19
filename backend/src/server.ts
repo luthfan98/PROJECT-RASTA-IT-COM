@@ -3,14 +3,11 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import path from 'path';
-import dotenv from 'dotenv';
+import { env } from './config/env.js';
 import { testDbConnection } from './config/database.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
-
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const fastify = Fastify({
   logger: true,
@@ -25,19 +22,18 @@ async function main() {
     });
 
     await fastify.register(jwt, {
-      secret: process.env.JWT_SECRET || 'super_secret_jwt_key_rasta_it_com_2026',
+      secret: env.JWT_SECRET,
     });
 
     await fastify.register(multipart, {
       limits: {
-        fileSize: 50 * 1024 * 1024, // Maksimal 50MB per file
+        fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024,
       },
     });
 
-    // 2. Static File Serving untuk folder uploads
-    const uploadsPath = path.resolve(process.cwd(), process.env.UPLOAD_DIR || '../uploads');
+    // 2. Static File Serving untuk folder uploads terpusat
     await fastify.register(fastifyStatic, {
-      root: uploadsPath,
+      root: env.UPLOAD_DIR,
       prefix: '/uploads/',
       decorateReply: false,
     });
@@ -47,6 +43,7 @@ async function main() {
       return {
         status: 'ok',
         service: 'RASTA IT COM Fastify API',
+        environment: env.NODE_ENV,
         timestamp: new Date().toISOString(),
       };
     });
@@ -60,12 +57,12 @@ async function main() {
     await testDbConnection();
 
     // 6. Listen Server
-    const port = Number(process.env.PORT) || 5000;
-    const host = process.env.HOST || '0.0.0.0';
+    const port = env.PORT;
+    const host = env.HOST;
 
     await fastify.listen({ port, host });
     console.log(`🚀 Fastify Server running at http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
-    console.log(`📁 Uploads serving from: ${uploadsPath} -> http://localhost:${port}/uploads/`);
+    console.log(`📁 Uploads serving from: ${env.UPLOAD_DIR} -> http://localhost:${port}/uploads/`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

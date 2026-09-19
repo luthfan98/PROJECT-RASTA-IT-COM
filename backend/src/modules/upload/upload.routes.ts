@@ -3,11 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import { pipeline } from 'stream/promises';
 import { pool } from '../../config/database.js';
+import { env } from '../../config/env.js';
 import { prepareStoragePath } from '../../utils/fileStorage.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 export async function uploadRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
-  const baseUploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || '../uploads');
+  const baseUploadDir = env.UPLOAD_DIR;
 
   // POST /api/upload - Menerima upload file tunggal atau jamak
   fastify.post('/single', async (request, reply) => {

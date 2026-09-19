@@ -1,15 +1,12 @@
 import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-import path from 'path';
-
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+import { env } from './env.js';
 
 export const pool = mysql.createPool({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'rasta_it_db',
+  host: env.DB_HOST,
+  port: env.DB_PORT,
+  user: env.DB_USER,
+  password: env.DB_PASSWORD,
+  database: env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -18,7 +15,7 @@ export const pool = mysql.createPool({
 export async function testDbConnection() {
   try {
     const connection = await pool.getConnection();
-    console.log('✅ Connected to MySQL database:', process.env.DB_NAME || 'rasta_it_db');
+    console.log('✅ Connected to MySQL database:', env.DB_NAME);
     connection.release();
     return true;
   } catch (error) {

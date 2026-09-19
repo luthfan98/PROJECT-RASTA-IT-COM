@@ -176,5 +176,49 @@ Completed.
 ### Next
 Mengembangkan fitur spesifik lanjutan sesuai kebutuhan operasional (misal: penambahan form data lapangan, laporan berkala, atau integrasi webhook).
 
+---
+
+## 2026-09-19 11:35 — Sentralisasi Konfigurasi Aplikasi ke Root `.env`
+
+### Goal
+Memusatkan seluruh konfigurasi aplikasi (backend Fastify, MySQL, JWT, uploads, dan frontend Vite) ke satu file `.env` di folder root project (`e:\PROJECT RASTA IT COM\.env`) agar mudah dirawat dan dikonfigurasi dalam satu tempat.
+
+### Process
+1. Membuat file `.env` terpusat di root direktori dengan seluruh variabel:
+   * Server Fastify (`PORT`, `HOST`, `NODE_ENV`).
+   * MySQL Database (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`).
+   * Security (`JWT_SECRET`).
+   * Storage (`UPLOAD_DIR`, `MAX_FILE_SIZE_MB`).
+   * Frontend Vite (`VITE_APP_TITLE`, `VITE_API_BASE_URL`, `VITE_PORT`).
+2. Membuat file template `.env.example` di root direktori untuk referensi repository.
+3. Menghapus file lokal `backend/.env`.
+4. Membuat helper `backend/src/config/env.ts` untuk mendeteksi dan memuat root `.env` secara otomatis dan deterministik.
+5. Memperbarui `database.ts`, `server.ts`, dan `upload.routes.ts` untuk mengonsumsi `env` terpusat.
+6. Memperbarui `frontend/vite.config.ts` dengan `envDir: '../'` agar frontend otomatis membaca variabel root `.env`.
+7. Merestart daemon Fastify backend dan memvalidasi koneksi MySQL dan endpoint health.
+
+### Files Changed
+* `.env` (Baru di root, terabaikan di git via .gitignore)
+* `.env.example` (Template root)
+* `backend/.env` (Dihapus)
+* `backend/src/config/env.ts` (Loader terpusat)
+* `backend/src/config/database.ts`
+* `backend/src/modules/upload/upload.routes.ts`
+* `backend/src/server.ts`
+* `frontend/vite.config.ts`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Fastify Server startup log: `Connected to MySQL database: rasta_it_db`, `Listening at http://0.0.0.0:5000`, `Uploads serving from: E:\PROJECT RASTA IT COM\uploads`.
+* Healthcheck API: `GET http://localhost:5000/api/health` merespons status `ok` dan environment `development`.
+* Git check: `.env` di root tetap diabaikan oleh `.gitignore` sehingga rahasia kredensial aman.
+
+### Result
+Completed.
+
+### Next
+Siap melanjutkan pengembangan modul fitur aplikasi berikutnya.
+
+
 
 
