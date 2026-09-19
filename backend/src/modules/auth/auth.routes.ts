@@ -57,15 +57,8 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
         });
       }
 
-      // Validasi password (bcrypt atau fallback dev)
-      let isMatch = false;
-      if (password === 'admin123' && user.username === 'admin') {
-        isMatch = true;
-      } else if (password === 'petugas123' && user.username === 'petugas') {
-        isMatch = true;
-      } else {
-        isMatch = await bcrypt.compare(password, user.password).catch(() => false);
-      }
+      // Validasi password murni menggunakan bcrypt terhadap hash terenkripsi di database MySQL
+      const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
         return reply.code(401).send({

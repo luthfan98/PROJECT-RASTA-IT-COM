@@ -313,6 +313,51 @@ Completed.
 ### Next
 Menunggu instruksi fitur atau data operasional berikutnya dari user.
 
+---
+
+## 2026-09-19 11:46 — Pembersihan Sample Login & Penerapan Enkripsi Password Bcrypt Database Murni
+
+### Goal
+Menghilangkan box sample login ("Akun Demo Standar Bawaan"), menghilangkan prefill teks otomatis, menghapus teks footer, serta memastikan seluruh proses autentikasi login terhubung murni ke database MySQL `rasta_it_db` dengan password terenkripsi bcrypt (tanpa hardcode / fallback demo apapun).
+
+### Process
+1. **Pembaruan Password Terenkripsi di MySQL**:
+   * Men-generate hash bcrypt salt rounds 12 untuk password akun:
+     * `admin`: `$2b$12$dWOpqgcMVNYvGYNF1PoSLuZI.GCfIwwL.ayvaw1rdNWM01BLFozOe`
+     * `petugas`: `$2b$12$D2Kg/WZ.mHsa32nLh/MEwuzMIvtNcmCAlufv9k4loPaYYA.9iI/yC`
+   * Mengupdate field `password` pada tabel `users` di database MySQL `rasta_it_db`.
+2. **Backend Fastify Auth (`auth.routes.ts`)**:
+   * Menghapus seluruh fallback hardcode password (`if password === 'admin123' ...`).
+   * Menggunakan verifikasi murni `await bcrypt.compare(password, user.password)` terhadap database.
+3. **Frontend Login Page (`LoginPage.tsx`)**:
+   * Mengosongkan state inisial `username` dan `password` (default string kosong `''`).
+   * Menghilangkan logika autofill saat pergantian role admin/petugas.
+   * Menghapus seluruh blok kontainer "Akun Demo Standar Bawaan".
+   * Menghapus baris teks footer bawaan di bawah card login.
+4. **Validasi End-to-End**:
+   * Menjalankan automated API test login valid (`admin` & `petugas` return 200 dengan JWT) dan invalid (return 401).
+   * Menjalankan browser subagent: verifikasi form kosong dan pengetesan login interaktif ke Admin Dashboard.
+
+### Files Changed
+* `backend/src/modules/auth/auth.routes.ts`
+* `frontend/src/pages/auth/LoginPage.tsx`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Automated API Auth Test:
+  * Admin login (`admin` / `admin123`): PASS (200 OK, JWT valid)
+  * Petugas login (`petugas` / `petugas123`): PASS (200 OK, JWT valid)
+  * Invalid password (`admin` / `wrongpass99`): PASS (401 Unauthorized, pesan error tepat)
+* Vite build (`npm run build`): PASS (2.95s, 0 error).
+* Browser Subagent Verification: PASS (UI login sangat bersih, tanpa box demo, input manual berfungsi, login berhasil redirect ke Admin Dashboard).
+
+### Result
+Completed.
+
+### Next
+Menunggu instruksi penambahan fitur fungsional atau formulir operasional berikutnya dari user.
+
+
 
 
 

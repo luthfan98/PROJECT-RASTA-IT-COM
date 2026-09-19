@@ -6,21 +6,14 @@ import axios from 'axios';
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'admin' | 'petugas'>('admin');
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleRoleSelect = (role: 'admin' | 'petugas') => {
     setSelectedRole(role);
     setErrorMsg(null);
-    if (role === 'admin') {
-      setUsername('admin');
-      setPassword('admin123');
-    } else {
-      setUsername('petugas');
-      setPassword('petugas123');
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -187,35 +180,7 @@ export const LoginPage: React.FC = () => {
               </button>
             </div>
           </form>
-
-          {/* Quick Demo Credentials Helper */}
-          <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-            <p className="text-[11px] text-slate-400 font-medium mb-2">Akun Demo Standar Bawaan:</p>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('admin')}
-                className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-left hover:border-amber-400 transition-colors"
-              >
-                <span className="font-bold text-slate-700 block">Admin:</span>
-                <span className="text-slate-500">admin / admin123</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('petugas')}
-                className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-left hover:border-cyan-400 transition-colors"
-              >
-                <span className="font-bold text-slate-700 block">Petugas:</span>
-                <span className="text-slate-500">petugas / petugas123</span>
-              </button>
-            </div>
-          </div>
         </div>
-
-        {/* Footer info */}
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Fastify Backend + MySQL + React Vite &copy; 2026 RASTA IT COM
-        </p>
       </div>
     </div>
   );
