@@ -253,6 +253,33 @@ Completed.
 ### Next
 Menunggu instruksi fitur atau data operasional berikutnya dari user.
 
+---
+
+## 2026-09-19 11:42 — Penyesuaian Logo Transparan Hero pada Halaman Login
+
+### Goal
+Menghapus wadah/kotak putih dan teks judul "RASTA IT COM" yang redundan di atas form login sesuai arahan visual user, serta menampilkan logo transparan `logo-tr.png` secara langsung dengan proporsi ukuran yang pas dan elegan.
+
+### Process
+1. Menghapus elemen pembungkus putih dan teks `<h2>RASTA IT COM</h2>` di `frontend/src/pages/auth/LoginPage.tsx`.
+2. Menerapkan gambar logo transparan `/logo-tr.png` langsung sebagai hero logo dengan ukuran proporsional (`h-20 sm:h-24 w-auto object-contain drop-shadow-sm`).
+3. Memvalidasi hasil tampilan visual via browser subagent dan memastikan respon build produksi `npm run build` sukses (0 error).
+
+### Files Changed
+* `frontend/src/pages/auth/LoginPage.tsx`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Vite Build (`npm run build`): PASS (3.13s, 0 error).
+* Browser Subagent Verification: PASS (Logo transparan tampil bersih langsung di atas teks deskripsi tanpa kotak putih dan tanpa teks berlebih).
+
+### Result
+Completed.
+
+### Next
+Siap melanjutkan ke pengembangan fitur operasional berikutnya.
+
+
 
 
 
