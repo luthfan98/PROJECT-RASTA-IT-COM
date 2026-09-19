@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/auth/LoginPage';
 import { Header } from './components/Header';
+import { AdminSidebarLayout } from './components/AdminSidebar';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { PetugasDashboard } from './pages/petugas/PetugasDashboard';
 import { MediaUploadsList } from './pages/uploads/MediaUploadsList';
@@ -15,18 +16,13 @@ export const AppContent: React.FC = () => {
     return <LoginPage />;
   }
 
-  return (
-    <div className="min-h-screen bg-[#F0F4F8] flex flex-col">
-      <Header currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab as any)} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentTab === 'dashboard' && (
-          user?.role === 'admin' ? <AdminDashboard /> : <PetugasDashboard />
-        )}
-
+  // Khusus Dashboard Admin: Gunakan Responsive Sidebar Layout
+  if (user?.role === 'admin') {
+    return (
+      <AdminSidebarLayout currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)}>
+        {currentTab === 'dashboard' && <AdminDashboard />}
         {currentTab === 'uploads' && <MediaUploadsList />}
-
-        {currentTab === 'system' && user?.role === 'admin' && (
+        {currentTab === 'system' && (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
               <h2 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
@@ -76,6 +72,18 @@ export const AppContent: React.FC = () => {
             </div>
           </div>
         )}
+      </AdminSidebarLayout>
+    );
+  }
+
+  // Tampilan Petugas Lapangan
+  return (
+    <div className="min-h-screen bg-[#F0F4F8] flex flex-col">
+      <Header currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab as any)} />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {currentTab === 'dashboard' && <PetugasDashboard />}
+        {currentTab === 'uploads' && <MediaUploadsList />}
       </main>
     </div>
   );
