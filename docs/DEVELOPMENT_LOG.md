@@ -505,3 +505,41 @@ Completed.
 
 ### Next
 Siap menerima masukan atau instruksi pengembangan fitur operasional berikutnya dari user.
+
+---
+
+## 2026-09-19 12:15 — Penyesuaian Logo Mandiri Tanpa Teks Redundan & Keseimbangan Visual Tema Light & Dark
+
+### Goal
+1. Menghilangkan teks tulisan yang redundan di samping logo (karena logo fisik `logo-tr.png` sudah memuat tulisan "RASTA").
+2. Menyeimbangkan palet warna tema agar:
+   * Pada **Light Mode**: Tidak serba putih polos/monoton (memiliki kedalaman visual dengan sidebar dark navy yang kokoh membingkai sisi kiri, canvas slate-100 halus, kartu putih kontras tinggi dengan aksen ikon berwarna).
+   * Pada **Dark Mode**: Tidak serba hitam pekat/gelap gulita (menggunakan space navy `#070D1E`, kartu slate navy `#111C3A`, dan aksen warna-warni yang hidup).
+
+### Process
+1. **Pembersihan Brand Header Sidebar ([`AdminSidebar.tsx`](file:///e:/PROJECT%20RASTA%20IT%20COM/frontend/src/components/AdminSidebar.tsx))**:
+   * Menghapus teks redundan `RASTA IT COM` di samping gambar logo.
+   * Logo `logo-tr.png` disajikan secara bersih di dalam badge putih rounded bersudut halus, didampingi badge pill status `Admin` yang minimalis.
+   * Di header mobile, logo tampil proporsional tanpa teks yang berlebih.
+2. **Keseimbangan Palet Light Mode**:
+   * Sidebar menggunakan Dark Navy (`#0B132B`) yang bertindak sebagai bingkai jangkar navigasi kiri yang tegas dan tidak monoton putih.
+   * Latar belakang konten menggunakan soft cool grey canvas (`#F1F5F9`), sehingga kartu putih (`#FFFFFF`) memiliki kedalaman dan kontras yang jelas.
+   * Kartu KPI dan tabel dilengkapi aksen warna khas (biru, cyan, emerald, dan amber).
+3. **Keseimbangan Palet Dark Mode**:
+   * Menggunakan perpaduan warna navy gelap bergradasi halus (`#070D1E`), kartu slate-navy ber-border halus (`#111C3A`), serta teks dan lencana berwarna cyan, hijau, dan kuning yang menyala terang dan nyaman dibaca.
+
+### Files Changed
+* `frontend/src/components/AdminSidebar.tsx`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Vite Build (`npm run build`): PASS (3.13s, 0 error).
+* Browser Subagent Verification:
+  * Desktop Light Mode (`admin_desktop_light_v2_1789794884433.png`): PASS — Logo RASTA tampil mandiri tanpa teks redundan, kontras Light mode sangat seimbang dan elegan (tidak serba putih).
+  * Desktop Dark Mode (`admin_desktop_dark_v2_1789794901092.png`): PASS — Tampilan Dark mode sangat hidup dan nyaman di mata (tidak hitam pekat monoton).
+
+### Result
+Completed.
+
+### Next
+Siap menerima masukan atau instruksi pengembangan fitur operasional berikutnya dari user.
