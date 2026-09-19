@@ -452,3 +452,56 @@ Completed.
 
 ### Next
 Siap menerima masukan atau fitur operasional tambahan dari user.
+
+---
+
+## 2026-09-19 12:12 — Implementasi Theme Switcher (Light/Dark, Default Light) & Perapian Total Header/Navigasi
+
+### Goal
+1. Menyediakan tombol pengubah tema (*Light / Dark Theme Toggle*) pada antarmuka dengan **default tema Light**.
+2. Merapikan header dan navigasi yang sebelumnya berantakan (menghilangkan duplikasi judul header ganda yang bertumpuk, merapikan navigasi sidebar, dan menyelaraskan header mobile).
+
+### Investigation
+* Pada implementasi sebelumnya, terdapat dua blok header bertumpuk: top bar bertuliskan "Dashboard Utama" dan tepat di bawahnya ada banner besar bertuliskan "Dashboard Monitoring & Penyimpanan Terstruktur", menyebabkan tampilan berdesakan terutama di layar mobile.
+* Tidak ada pengontrol tema, sementara pengguna secara khusus menginginkan mode tampilan **Light sebagai bawaan (*default*)**, namun tetap memiliki fleksibilitas untuk beralih ke **Dark Mode**.
+
+### Process
+1. **Pembuatan `ThemeContext.tsx`**:
+   * State tema (`light` | `dark`), diinisialisasi default `'light'` (disinkronkan dengan `localStorage.getItem('rasta_theme')`).
+   * Menambahkan/menghapus kelas `dark` pada elemen root `<html>` (`document.documentElement.classList`).
+   * Menambahkan `darkMode: 'class'` pada `frontend/tailwind.config.js`.
+   * Membungkus aplikasi dengan `ThemeProvider` di `frontend/src/main.tsx`.
+2. **Perapian Header Tunggal & Responsif ([`AdminSidebar.tsx`](file:///e:/PROJECT%20RASTA%20IT%20COM/frontend/src/components/AdminSidebar.tsx))**:
+   * Mengonsolidasikan seluruh kontrol ke **satu Top Bar header bersih**:
+     * Kiri: Toggle menu hamburger mobile, logo RASTA, dan breadcrumb ringkas (`Portal Admin / TAB_AKTIF` + judul halaman).
+     * Kanan: Jam waktu nyata WIB, pill status `MySQL: Connected`, tombol toggle tema (**Sun/Moon** dengan label teks di desktop & ikon rapi di mobile), dan tombol aksi.
+   * Merapikan navigasi sidebar: item menu fokus (Dashboard Utama, Audit & Media Uploads, Status Sistem & DB), widget penyimpanan kompak dengan progress bar, profil pengguna, dan logout di footer.
+3. **Pembersihan Duplikasi Judul pada Halaman ([`AdminDashboard.tsx`](file:///e:/PROJECT%20RASTA%20IT%20COM/frontend/src/pages/admin/AdminDashboard.tsx))**:
+   * Menghapus blok banner judul ganda yang berlebih.
+   * Halaman langsung menyajikan 4 Kartu KPI (*Total Berkas, Kapasitas Storage, Status MySQL, Peran Terdaftar*) dengan styling adaptif (Light mode: kartu putih bersih bersudut rounded elegan; Dark mode: dark glass card dengan glow halus).
+   * Tabel Audit Berkas Terenkripsi diselaraskan penuh untuk kedua mode tema.
+4. **Penyelarasan Tab Lainnya**:
+   * Memperbarui `MediaUploadsList.tsx` dan tab Informasi Sistem di `App.tsx` agar adaptif otomatis terhadap perubahan tema Light/Dark.
+
+### Files Changed
+* `frontend/tailwind.config.js`
+* `frontend/src/context/ThemeContext.tsx` (Baru)
+* `frontend/src/main.tsx`
+* `frontend/src/components/AdminSidebar.tsx`
+* `frontend/src/pages/admin/AdminDashboard.tsx`
+* `frontend/src/pages/uploads/MediaUploadsList.tsx`
+* `frontend/src/App.tsx`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Vite Build (`npm run build`): PASS (2.95s, 0 error).
+* Browser Subagent Verification:
+  * Desktop Light Mode (`admin_desktop_light_full_1789794735689.png`): PASS — Tampilan default Light Mode sangat bersih, elegan, kartu putih kontras tinggi, tidak ada judul ganda.
+  * Desktop Dark Mode (`admin_desktop_dark_1789794608407.png`): PASS — Tombol toggle tema beralih mulus ke Dark Mode futuristik.
+  * Mobile Layout (`admin_desktop_light_1789794351303.png` & `admin_mobile_drawer_1789794682306.png`): PASS — Header mobile rapi, tidak ada teks berdesakan, drawer sidebar terbuka responsif.
+
+### Result
+Completed.
+
+### Next
+Siap menerima masukan atau instruksi pengembangan fitur operasional berikutnya dari user.
