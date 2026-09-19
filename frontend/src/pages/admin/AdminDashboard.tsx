@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Database, HardDrive, Users, Layers, Trash2, ExternalLink, RefreshCw } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Database, 
+  HardDrive, 
+  Users, 
+  Layers, 
+  Trash2, 
+  ExternalLink, 
+  RefreshCw,
+  FolderLock,
+  FileText,
+  Image as ImageIcon,
+  Film,
+  FileSpreadsheet
+} from 'lucide-react';
 import axios from 'axios';
 
 export const AdminDashboard: React.FC = () => {
@@ -7,6 +21,7 @@ export const AdminDashboard: React.FC = () => {
   const [allFiles, setAllFiles] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -31,6 +46,12 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([fetchStats(), fetchFiles()]);
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   const handleDeleteFile = async (id: number) => {
@@ -64,120 +85,160 @@ export const AdminDashboard: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const getMediaTypeBadge = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'images':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+            <ImageIcon className="w-3 h-3" /> Images
+          </span>
+        );
+      case 'documents':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            <FileText className="w-3 h-3" /> Documents
+          </span>
+        );
+      case 'videos':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30">
+            <Film className="w-3 h-3" /> Videos
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-700/40 text-slate-300 border border-slate-600/40">
+            <FileSpreadsheet className="w-3 h-3" /> {type || 'Others'}
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Top Banner Admin */}
-      <div className="bg-gradient-to-r from-[#0B132B] via-[#1C2541] to-[#0B132B] rounded-2xl p-6 text-white shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Sleek Top Header Bar inside Page */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
+              <FolderLock className="w-3.5 h-3.5" />
               Pusat Kontrol Administrator
             </span>
             <span className="text-xs text-slate-400">&bull; RASTA IT COM System</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Dashboard Utama <span className="text-cyan-400">Admin</span>
-          </h1>
-          <p className="text-sm text-slate-300 mt-1 max-w-2xl">
-            Monitoring penyimpanan terstruktur, audit berkas unggahan petugas, dan status database MySQL lokal.
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            Dashboard Monitoring & <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Penyimpanan Terstruktur</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Pengawasan audit berkas terenkripsi, alokasi kapasitas direktori <code className="text-cyan-300 bg-slate-900 px-1 py-0.5 rounded">YYYY/MM/DD</code>, dan status database MySQL.
           </p>
         </div>
 
         <button
-          onClick={() => {
-            fetchStats();
-            fetchFiles();
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all self-start md:self-auto"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all self-start sm:self-auto shrink-0 border border-cyan-400/30"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Segarkan Data
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span>{isRefreshing ? 'Memperbarui...' : 'Segarkan Data'}</span>
         </button>
       </div>
 
-      {/* KPI Cards (Diselaraskan dengan style vibrasi AI) */}
+      {/* KPI Cards (Vibrasi AI Sleek Glassmorphic Theme) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Berkas */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex items-center justify-between">
+        <div className="bg-[#0E1726]/90 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)] transition-all flex items-center justify-between group">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Berkas</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Berkas</p>
+            <p className="text-3xl font-black text-white mt-1 group-hover:text-cyan-300 transition-colors">
               {stats?.totalFiles || 0}
             </p>
-            <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Tersimpan di uploads/</p>
+            <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Tersimpan di uploads/
+            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-            <HardDrive className="w-6 h-6" />
+          <div className="w-13 h-13 rounded-2xl bg-blue-500/10 text-cyan-400 flex items-center justify-center border border-blue-500/25 group-hover:scale-105 transition-transform">
+            <HardDrive className="w-6 h-6 text-cyan-400" />
           </div>
         </div>
 
         {/* Card 2: Penggunaan Storage */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex items-center justify-between">
+        <div className="bg-[#0E1726]/90 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)] transition-all flex items-center justify-between group">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kapasitas Storage</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kapasitas Storage</p>
+            <p className="text-3xl font-black text-white mt-1 group-hover:text-cyan-300 transition-colors">
               {formatBytes(stats?.totalBytes || 0)}
             </p>
-            <p className="text-[11px] text-cyan-600 font-semibold mt-0.5">Struktur YYYY/MM/DD</p>
+            <p className="text-[11px] text-cyan-400 font-semibold mt-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              Struktur YYYY/MM/DD
+            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center border border-cyan-100">
-            <Layers className="w-6 h-6" />
+          <div className="w-13 h-13 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/25 group-hover:scale-105 transition-transform">
+            <Layers className="w-6 h-6 text-cyan-400" />
           </div>
         </div>
 
         {/* Card 3: Database MySQL */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex items-center justify-between">
+        <div className="bg-[#0E1726]/90 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)] transition-all flex items-center justify-between group">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status MySQL</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-1 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status MySQL</p>
+            <p className="text-2xl font-black text-emerald-400 mt-1 flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
               Connected
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">DB: rasta_it_db (port 3306)</p>
+            <p className="text-[11px] text-slate-400 mt-1">DB: rasta_it_db (port 3306)</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-            <Database className="w-6 h-6" />
+          <div className="w-13 h-13 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/25 group-hover:scale-105 transition-transform">
+            <Database className="w-6 h-6 text-emerald-400" />
           </div>
         </div>
 
         {/* Card 4: Pengguna Terdaftar */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex items-center justify-between">
+        <div className="bg-[#0E1726]/90 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all flex items-center justify-between group">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Peran Terdaftar</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Peran Terdaftar</p>
+            <p className="text-3xl font-black text-white mt-1 group-hover:text-amber-300 transition-colors">
               {stats?.userStats?.reduce((acc: number, curr: any) => acc + curr.count, 0) || 2} Akun
             </p>
-            <p className="text-[11px] text-amber-600 font-semibold mt-0.5">1 Admin, 1 Petugas</p>
+            <p className="text-[11px] text-amber-400 font-semibold mt-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              1 Admin, 1 Petugas
+            </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-            <Users className="w-6 h-6" />
+          <div className="w-13 h-13 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/25 group-hover:scale-105 transition-transform">
+            <Users className="w-6 h-6 text-amber-400" />
           </div>
         </div>
       </div>
 
-      {/* Audit & Management Table */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      {/* Audit & Management Table Card */}
+      <div className="bg-[#0E1726]/90 backdrop-blur-md rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-amber-600" />
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-cyan-400" />
               Audit Berkas Terenkripsi (uploads/)
-            </h2>
-            <p className="text-xs text-slate-500">
-              Daftar seluruh file fisik yang diunggah petugas beserta hashing nama dan jalurnya
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Daftar seluruh file fisik yang diunggah petugas beserta hashing nama kriptografi dan jalurnya
             </p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-800 self-start sm:self-auto">
             {['all', 'images', 'documents', 'videos', 'others'].map((t) => (
               <button
                 key={t}
                 onClick={() => handleFilterChange(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
                   filterType === t
-                    ? 'bg-[#0B132B] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.35)]'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                 }`}
               >
                 {t === 'all' ? 'Semua' : t}
@@ -188,58 +249,48 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Table Content */}
         {isLoading ? (
-          <div className="py-12 text-center text-slate-400 text-xs">
-            <div className="w-6 h-6 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            Memuat data berkas...
+          <div className="py-16 text-center text-slate-400 text-xs">
+            <div className="w-7 h-7 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            Memuat data audit berkas...
           </div>
         ) : allFiles.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-xs">
-            Tidak ada berkas dengan filter <span className="font-bold">"{filterType}"</span>.
+          <div className="py-16 text-center text-slate-400 text-xs bg-slate-900/40 rounded-xl border border-slate-800/60">
+            Tidak ada berkas dengan filter <span className="font-bold text-cyan-400">"{filterType}"</span>.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-600">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 uppercase font-semibold">
-                <tr>
-                  <th className="py-3 px-4">Tipe</th>
-                  <th className="py-3 px-4">Nama Asli</th>
-                  <th className="py-3 px-4">Nama Terenkripsi di Disk</th>
-                  <th className="py-3 px-4">Jalur Relatif (YYYY/MM/DD)</th>
-                  <th className="py-3 px-4">Ukuran</th>
-                  <th className="py-3 px-4">Uploader</th>
-                  <th className="py-3 px-4 text-center">Aksi</th>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-900/90 text-slate-400 border-b border-slate-800 font-semibold tracking-wider">
+                  <th className="py-3 px-4">TIPE</th>
+                  <th className="py-3 px-4">NAMA ASLI</th>
+                  <th className="py-3 px-4">NAMA TERENKRIPSI DI DISK</th>
+                  <th className="py-3 px-4">JALUR RELATIF (YYYY/MM/DD)</th>
+                  <th className="py-3 px-4">UKURAN</th>
+                  <th className="py-3 px-4">UPLOADER</th>
+                  <th className="py-3 px-4 text-center">AKSI</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-800/80">
                 {allFiles.map((file) => (
-                  <tr key={file.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={file.id} className="hover:bg-slate-800/40 transition-colors group">
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-1 font-semibold uppercase px-2 py-0.5 rounded-full text-[10px] ${
-                        file.media_type === 'images'
-                          ? 'bg-blue-100 text-blue-700'
-                          : file.media_type === 'documents'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : file.media_type === 'videos'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        {file.media_type}
-                      </span>
+                      {getMediaTypeBadge(file.media_type)}
                     </td>
-                    <td className="py-3 px-4 font-semibold text-slate-900 max-w-xs truncate">
+                    <td className="py-3 px-4 font-semibold text-white max-w-[180px] truncate">
                       {file.original_name}
                     </td>
-                    <td className="py-3 px-4 font-mono text-[11px] text-slate-500 max-w-xs truncate">
+                    <td className="py-3 px-4 font-mono text-[11px] text-slate-400 max-w-[200px] truncate">
                       {file.stored_name}
                     </td>
-                    <td className="py-3 px-4 font-mono text-[11px] text-cyan-700">
+                    <td className="py-3 px-4 font-mono text-[11px] text-cyan-300 max-w-[220px] truncate">
                       {file.relative_path}
                     </td>
-                    <td className="py-3 px-4">{formatBytes(file.file_size)}</td>
-                    <td className="py-3 px-4">
-                      <span className="font-semibold text-slate-700">
-                        {file.uploader_name || file.role || 'Sistem / Anonim'}
-                      </span>
+                    <td className="py-3 px-4 text-slate-300 font-medium">
+                      {formatBytes(file.file_size)}
+                    </td>
+                    <td className="py-3 px-4 text-slate-400">
+                      {file.uploader_name || 'Petugas'}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
@@ -247,15 +298,15 @@ export const AdminDashboard: React.FC = () => {
                           href={file.file_url}
                           target="_blank"
                           rel="noreferrer"
-                          title="Buka / Preview"
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-cyan-50 text-cyan-600 transition-colors"
+                          title="Buka Berkas Asli"
+                          className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                         <button
                           onClick={() => handleDeleteFile(file.id)}
-                          title="Hapus Berkas"
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 text-rose-600 transition-colors"
+                          title="Hapus Berkas dari Disk & DB"
+                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
