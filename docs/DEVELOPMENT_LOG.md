@@ -219,6 +219,41 @@ Completed.
 ### Next
 Siap melanjutkan pengembangan modul fitur aplikasi berikutnya.
 
+---
+
+## 2026-09-19 11:39 — Integrasi Logo Resmi RASTA pada Antarmuka Aplikasi
+
+### Goal
+Mengintegrasikan aset logo resmi RASTA (`logo-tr.png` dan `logo-bg-white.jpeg`) ke dalam antarmuka aplikasi frontend (halaman Login, Header navbar, dan favicon).
+
+### Process
+1. Memeriksa file logo yang diletakkan user di root (`logo-tr.png` transparan dan `logo-bg-white.jpeg`).
+2. Menyalin aset logo ke `frontend/public/` (`logo-tr.png`, `logo-bg-white.jpeg`, dan `favicon.png`).
+3. Memperbarui `frontend/index.html` agar menggunakan `/favicon.png` sebagai favicon browser.
+4. Memperbarui `frontend/src/components/Header.tsx` untuk menampilkan logo RASTA di navbar Dark Navy dengan kartu/wadah putih rounded yang rapi.
+5. Memperbarui `frontend/src/pages/auth/LoginPage.tsx` untuk menampilkan logo RASTA di atas judul dan card login.
+6. Memvalidasi kompilasi `npm run build` dan memverifikasi tampilan visual via browser subagent.
+
+### Files Changed
+* `frontend/public/logo-tr.png`
+* `frontend/public/logo-bg-white.jpeg`
+* `frontend/public/favicon.png`
+* `frontend/index.html`
+* `frontend/src/components/Header.tsx`
+* `frontend/src/pages/auth/LoginPage.tsx`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Vite Build (`npm run build`): PASS (Berhasil terkompilasi, 0 error).
+* Browser Subagent Verification: PASS (Logo RASTA tampil jelas dan presisi pada modal login dan navbar header).
+
+### Result
+Completed.
+
+### Next
+Menunggu instruksi fitur atau data operasional berikutnya dari user.
+
+
 
 
 

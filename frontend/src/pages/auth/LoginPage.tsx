@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldCheck, UserCheck, Lock, User as UserIcon, ArrowRight, HardDrive, AlertCircle } from 'lucide-react';
+import { ShieldCheck, UserCheck, Lock, User as UserIcon, ArrowRight, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
 export const LoginPage: React.FC = () => {
@@ -57,8 +57,8 @@ export const LoginPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="h-16 w-16 rounded-2xl bg-[#0B132B] p-3 shadow-glow-cyan border border-slate-700 flex items-center justify-center mb-4">
-            <HardDrive className="w-8 h-8 text-cyan-400" />
+          <div className="h-16 px-6 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-center mb-3 hover:shadow-md transition-shadow">
+            <img src="/logo-tr.png" alt="RASTA Logo" className="h-10 w-auto object-contain" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0B132B] tracking-tight">
             RASTA <span className="text-cyan-600">IT COM</span>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, UserCheck, LogOut, HardDrive } from 'lucide-react';
+import { ShieldCheck, UserCheck, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   currentTab: string;
@@ -15,11 +15,9 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onSelectTab }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo & Title */}
-          <div className="flex items-center space-x-4">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 via-cyan-500 to-teal-400 p-[2px] shadow-glow-cyan">
-              <div className="w-full h-full bg-[#0B132B] rounded-[10px] flex items-center justify-center">
-                <HardDrive className="w-5 h-5 text-cyan-400" />
-              </div>
+          <div className="flex items-center space-x-3.5">
+            <div className="h-10 px-3 bg-white rounded-xl shadow-sm border border-slate-600/30 flex items-center justify-center hover:scale-105 transition-transform">
+              <img src="/logo-tr.png" alt="RASTA Logo" className="h-6 w-auto object-contain" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
