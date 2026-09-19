@@ -88,3 +88,38 @@ Completed.
 ### Next
 Siap untuk mulai pengerjaan arsitektur / kode aplikasi serta melakukan commit berkala pada setiap milestone/fitur.
 
+---
+
+## 2026-09-19 11:10 — Instalasi & Konfigurasi aaPanel pada Server Harnet
+
+### Goal
+Menginstal dan mengonfigurasi aaPanel pada remote server Harnet Digital Creative (`harnet.cloudbee.my.id:2273`) berbasis Ubuntu 24.04 LTS.
+
+### Investigation
+* Host: `harnet.cloudbee.my.id` (IP Publik: `154.17.167.145`)
+* SSH Port: `2273` (VM internal IP: `192.168.206.59`, hostname `vm329`)
+* OS: Ubuntu 24.04.5 LTS (Noble Numbat) x86_64.
+* Arsitektur jaringan: NAT VPS.
+
+### Process
+1. Memverifikasi koneksi SSH dan elevasi hak akses root melalui `sudo -i`.
+2. Mengunduh installer resmi aaPanel versi Ubuntu dari CDN resmi.
+3. Menjalankan skrip instalasi non-interaktif/otomatis (`install.sh aapanel`), menginstal dependensi Python, Nginx, Bt-Panel daemon, dan library pendukung.
+4. Memvalidasi service Bt-Panel dan Bt-Task berjalan normal (`bt status` & `bt default`).
+5. Membuka port yang dibutuhkan pada firewall `ufw`.
+
+### Files Changed
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* `bt status`: `Bt-Panel (pid 32220)` & `Bt-Task (pid 32209)` running.
+* `ufw status`: Port 31762/tcp, 80, 443, 888 aktif dan diizinkan.
+* `bt 14`: Informasi akses panel (URL entrance, username, password) berhasil digenerate.
+
+### Result
+Completed.
+
+### Next
+Menginformasikan kredensial panel kepada user dan panduan akses via IP/Domain atau port forwarding/tunneling jika port NAT belum dialokasikan secara publik oleh provider.
+
+
