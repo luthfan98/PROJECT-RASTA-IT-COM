@@ -279,6 +279,41 @@ Completed.
 ### Next
 Siap melanjutkan ke pengembangan fitur operasional berikutnya.
 
+---
+
+## 2026-09-19 11:43 — Pemotongan (*Crop*) Whitespace Transparan Atas & Bawah Logo RASTA
+
+### Goal
+Memotong area transparan kosong (*empty transparent whitespace*) pada bagian atas dan bawah file `logo-tr.png` yang menyebabkan jarak vertikal berlebih pada antarmuka login.
+
+### Investigation
+* Dimensi asli `logo-tr.png` adalah `667 x 374` piksel, namun piksel non-transparan (*bounding box*) hanya berada pada koordinat `(45, 102, 622, 234)` (tinggi teks hanya 132px dari total tinggi 374px, atau >64% tinggi berupa ruang kosong transparan).
+
+### Process
+1. Menggunakan library Python Pillow untuk mendeteksi `getbbox()` dari kanal alpha logo dan memotong padding kosong atas-bawah secara presisi (`585 x 140` piksel dengan margin halus 4px).
+2. Memperbarui file logo hasil crop ke root, `frontend/public/logo-tr.png`, `frontend/dist/logo-tr.png`, dan favicon.
+3. Menyesuaikan dimensi tampilan gambar di `frontend/src/pages/auth/LoginPage.tsx` menjadi `h-11 sm:h-13 w-auto`.
+4. Memvalidasi ulang tampilan visual via browser subagent.
+
+### Files Changed
+* `logo-tr.png` (Root & public)
+* `frontend/public/logo-tr.png`
+* `frontend/public/favicon.png`
+* `frontend/src/pages/auth/LoginPage.tsx`
+* `docs/DEVELOPMENT_LOG.md`
+
+### Validation
+* Dimensi file berkurang dari `667x374` menjadi `585x140` tanpa kehilangan resolusi teks logo.
+* Vite build: PASS (3.19s, 0 error).
+* Browser Subagent Verification: PASS (Ruang kosong transparan di atas dan di bawah logo hilang sempurna, jarak dengan teks judul dan tombol menjadi proporsional).
+
+### Result
+Completed.
+
+### Next
+Menunggu instruksi fitur atau data operasional berikutnya dari user.
+
+
 
 
 

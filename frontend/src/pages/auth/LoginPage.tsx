@@ -56,11 +56,11 @@ export const LoginPage: React.FC = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-4">
+        <div className="flex flex-col items-center text-center mb-5">
           <img
             src="/logo-tr.png"
             alt="RASTA Logo"
-            className="h-20 sm:h-24 w-auto object-contain drop-shadow-sm mb-3 hover:scale-105 transition-transform duration-300"
+            className="h-11 sm:h-13 w-auto object-contain drop-shadow-sm mb-3 hover:scale-105 transition-transform duration-300"
           />
           <p className="text-sm text-slate-500 font-medium">
             Pilih portal peran Anda untuk masuk ke sistem
