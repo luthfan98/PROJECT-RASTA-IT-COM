@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { pool } from '../../config/database.js';
 import { RowDataPacket } from 'mysql2';
+import { logAuditEvent } from '../../utils/auditLogger.js';
 
 interface UserRow extends RowDataPacket {
   id: number;
@@ -9,8 +10,9 @@ interface UserRow extends RowDataPacket {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'petugas';
+  role: 'admin' | 'engineer' | 'operator' | 'petugas';
   status: 'active' | 'inactive';
+  last_login_at: string | null;
 }
 
 export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
@@ -19,7 +21,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
     const { username, password, role } = request.body as {
       username?: string;
       password?: string;
-      role?: 'admin' | 'petugas';
+      role?: string;
     };
 
     if (!username || !password) {
@@ -34,6 +36,22 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
       const [rows] = await pool.query<UserRow[]>(query, [username]);
 
       if (rows.length === 0) {
+        await logAuditEvent({
+          userId: null,
+          actorType: 'USER',
+          actorName: username,
+          actorRole: role || 'unknown',
+          action: 'LOGIN_FAILED',
+          module: 'AUTH',
+          entityType: 'USER',
+          entityId: 'unknown',
+          target: username,
+          description: 'Percobaan login gagal: Username tidak ditemukan',
+          reason: 'User not found',
+          status: 'FAILED',
+          req: request,
+        });
+
         return reply.code(401).send({
           success: false,
           message: 'Username atau password salah',
@@ -42,18 +60,55 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
 
       const user = rows[0];
 
-      // Verifikasi role jika disertakan
-      if (role && user.role !== role) {
-        return reply.code(403).send({
-          success: false,
-          message: `Akun ini tidak memiliki akses sebagai ${role.toUpperCase()}`,
-        });
+      // Verifikasi role jika disertakan (normalizing petugas = operator)
+      if (role) {
+        const reqRole = role.toLowerCase();
+        const userRole = user.role.toLowerCase();
+        const isOperatorEquiv = (reqRole === 'operator' || reqRole === 'petugas') && (userRole === 'operator' || userRole === 'petugas');
+        if (reqRole !== userRole && !isOperatorEquiv) {
+          await logAuditEvent({
+            userId: user.id,
+            actorType: 'USER',
+            actorName: user.name,
+            actorRole: user.role,
+            action: 'LOGIN_FAILED',
+            module: 'AUTH',
+            entityType: 'USER',
+            entityId: String(user.id),
+            target: user.username,
+            description: `Percobaan login ditolak: Role akun (${user.role.toUpperCase()}) tidak sesuai portal ${role.toUpperCase()}`,
+            reason: 'Role mismatch',
+            status: 'FAILED',
+            req: request,
+          });
+
+          return reply.code(403).send({
+            success: false,
+            message: `Akun ini tidak memiliki akses sebagai ${role.toUpperCase()}`,
+          });
+        }
       }
 
       if (user.status !== 'active') {
+        await logAuditEvent({
+          userId: user.id,
+          actorType: 'USER',
+          actorName: user.name,
+          actorRole: user.role,
+          action: 'LOGIN_FAILED',
+          module: 'AUTH',
+          entityType: 'USER',
+          entityId: String(user.id),
+          target: user.username,
+          description: 'Percobaan login ditolak: Akun dalam status NONAKTIF',
+          reason: 'Account inactive',
+          status: 'FAILED',
+          req: request,
+        });
+
         return reply.code(403).send({
           success: false,
-          message: 'Akun Anda sedang nonaktif',
+          message: 'Akun Anda sedang nonaktif. Hubungi administrator sistem.',
         });
       }
 
@@ -61,11 +116,46 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
+        await logAuditEvent({
+          userId: user.id,
+          actorType: 'USER',
+          actorName: user.name,
+          actorRole: user.role,
+          action: 'LOGIN_FAILED',
+          module: 'AUTH',
+          entityType: 'USER',
+          entityId: String(user.id),
+          target: user.username,
+          description: 'Percobaan login gagal: Password salah',
+          reason: 'Invalid password',
+          status: 'FAILED',
+          req: request,
+        });
+
         return reply.code(401).send({
           success: false,
           message: 'Username atau password salah',
         });
       }
+
+      // Update last_login_at
+      await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = ?;', [user.id]);
+
+      // Log LOGIN_SUCCESS
+      await logAuditEvent({
+        userId: user.id,
+        actorType: 'USER',
+        actorName: user.name,
+        actorRole: user.role,
+        action: 'LOGIN_SUCCESS',
+        module: 'AUTH',
+        entityType: 'USER',
+        entityId: String(user.id),
+        target: `${user.name} (${user.username})`,
+        description: `Autentikasi sesi berhasil untuk role ${user.role.toUpperCase()}`,
+        status: 'SUCCESS',
+        req: request,
+      });
 
       // Generate JWT Token
       const token = fastify.jwt.sign({
@@ -85,6 +175,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
           name: user.name,
           email: user.email,
           role: user.role,
+          last_login_at: new Date().toISOString(),
         },
       });
     } catch (error: any) {
@@ -95,6 +186,32 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
         error: error.message,
       });
     }
+  });
+
+  // Logout Endpoint
+  fastify.post('/logout', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+      const user = request.user as any;
+      if (user) {
+        await logAuditEvent({
+          userId: user.id,
+          actorType: 'USER',
+          actorName: user.name || user.username,
+          actorRole: user.role,
+          action: 'LOGOUT',
+          module: 'AUTH',
+          entityType: 'USER',
+          entityId: String(user.id),
+          target: user.username,
+          description: 'Pengguna mengakhiri sesi kerja (logout)',
+          status: 'SUCCESS',
+          req: request,
+        });
+      }
+    } catch {}
+
+    return reply.send({ success: true, message: 'Logout berhasil' });
   });
 
   // Get current authenticated user
@@ -112,7 +229,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
     async (request, reply) => {
       const decoded = request.user as any;
       const [rows] = await pool.query<UserRow[]>(
-        'SELECT id, username, name, email, role, status FROM users WHERE id = ?',
+        'SELECT id, username, name, email, role, status, last_login_at FROM users WHERE id = ?',
         [decoded.id]
       );
 

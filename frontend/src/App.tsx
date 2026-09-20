@@ -2,28 +2,107 @@ import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { LoginPage } from './pages/auth/LoginPage';
-import { Header } from './components/Header';
-import { AdminSidebarLayout } from './components/AdminSidebar';
+import { AdminSidebarLayout, AdminTab } from './components/AdminSidebar';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { PumpOperationsView } from './pages/admin/PumpOperationsView';
+import { SensorsMonitoringView } from './pages/admin/SensorsMonitoringView';
+import { SensorAnalyticsView } from './pages/admin/SensorAnalyticsView';
+import { MLPredictionsView } from './pages/admin/MLPredictionsView';
+import { AnomaliesView } from './pages/admin/AnomaliesView';
+import { FailureEventsView } from './pages/admin/FailureEventsView';
+import { MaintenanceView } from './pages/admin/MaintenanceView';
+import { AdminManualInputView } from './pages/admin/AdminManualInputView';
+import { ImportDataWizardView } from './pages/admin/ImportDataWizardView';
+import { DataImportsView } from './pages/admin/DataImportsView';
+import { AssetsManagementView } from './pages/admin/AssetsManagementView';
+import { UserManagementPage } from './pages/admin/UserManagementPage';
+import { UserDetailPage } from './pages/admin/UserDetailPage';
+import { ActivityLogPage } from './pages/admin/ActivityLogPage';
 import { PetugasDashboard } from './pages/petugas/PetugasDashboard';
-import { MediaUploadsList } from './pages/uploads/MediaUploadsList';
 import { Database, Server, HardDrive, CheckCircle2 } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const { theme } = useTheme();
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'uploads' | 'system'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<AdminTab>('dashboard');
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [analyticsTarget, setAnalyticsTarget] = useState<{ slot: string; point: string } | null>(null);
+
+  const handleNavigateToAnalytics = (slotCode: string, pointKey: string) => {
+    setAnalyticsTarget({ slot: slotCode, point: pointKey });
+    setCurrentTab('measurements');
+  };
 
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
-  // Khusus Dashboard Admin: Gunakan Responsive Sidebar Layout
-  if (user?.role === 'admin') {
+  // Khusus Dashboard Admin & Engineering: Gunakan Responsive Sidebar Layout dengan Menu Lengkap
+  if (user?.role === 'admin' || user?.role === 'engineer') {
     return (
-      <AdminSidebarLayout currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)}>
-        {currentTab === 'dashboard' && <AdminDashboard />}
-        {currentTab === 'uploads' && <MediaUploadsList />}
+      <AdminSidebarLayout 
+        currentTab={currentTab} 
+        onSelectTab={(tab) => {
+          setCurrentTab(tab);
+          if (tab !== 'users') {
+            setSelectedUserId(null);
+          }
+        }}
+      >
+        {/* MONITORING */}
+        {currentTab === 'dashboard' && (
+          <AdminDashboard 
+            onNavigateTab={(tab) => setCurrentTab(tab)} 
+            onNavigateToAnalytics={handleNavigateToAnalytics}
+          />
+        )}
+        {currentTab === 'pumps' && <PumpOperationsView />}
+        {currentTab === 'sensors' && (
+          <SensorsMonitoringView 
+            onNavigateToMeasurements={(slot, point) => {
+              setAnalyticsTarget({ slot, point });
+              setCurrentTab('measurements');
+            }}
+          />
+        )}
+        {currentTab === 'measurements' && (
+          <SensorAnalyticsView 
+            initialSlot={analyticsTarget?.slot || 'C'}
+            initialPoint={analyticsTarget?.point || 'PUMP-DE-H'}
+          />
+        )}
+
+        {/* PREDICTIVE MAINTENANCE */}
+        {currentTab === 'ml-predictions' && <MLPredictionsView />}
+        {currentTab === 'anomalies' && (
+          <AnomaliesView onNavigateToAnalytics={handleNavigateToAnalytics} />
+        )}
+        {currentTab === 'failure-events' && <FailureEventsView />}
+        {currentTab === 'maintenance' && <MaintenanceView />}
+
+        {/* DATA */}
+        {currentTab === 'manual-input' && <AdminManualInputView />}
+        {currentTab === 'import-data' && (
+          <ImportDataWizardView onNavigateToHistory={() => setCurrentTab('data-imports')} />
+        )}
+        {currentTab === 'data-imports' && <DataImportsView />}
+
+        {/* MANAGEMENT */}
+        {currentTab === 'equipment' && <AssetsManagementView initialTab="pumps" />}
+        {currentTab === 'sensor-management' && <AssetsManagementView initialTab="sensors" />}
+        
+        {/* USER MANAGEMENT & ROLES */}
+        {currentTab === 'users' && (
+          selectedUserId ? (
+            <UserDetailPage userId={selectedUserId} onBack={() => setSelectedUserId(null)} />
+          ) : (
+            <UserManagementPage onSelectUser={(id) => setSelectedUserId(id)} />
+          )
+        )}
+
+        {/* ACTIVITY & AUDIT LOG */}
+        {currentTab === 'activity-log' && <ActivityLogPage />}
+
         {currentTab === 'system' && (
           <div className="space-y-6 animate-fade-in">
             <div className={`rounded-2xl p-5 sm:p-6 border transition-all ${
@@ -97,17 +176,8 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  // Tampilan Petugas Lapangan
-  return (
-    <div className="min-h-screen bg-[#F0F4F8] flex flex-col">
-      <Header currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab as any)} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentTab === 'dashboard' && <PetugasDashboard />}
-        {currentTab === 'uploads' && <MediaUploadsList />}
-      </main>
-    </div>
-  );
+  // Tampilan Khusus Petugas Lapangan (Mobile-First Field Measurement Interface)
+  return <PetugasDashboard />;
 };
 
 export default function App() {

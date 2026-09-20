@@ -1,350 +1,376 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../context/ThemeContext';
-import { 
-  ShieldCheck, 
-  Database, 
-  HardDrive, 
-  Users, 
-  Layers, 
-  Trash2, 
-  ExternalLink, 
-  FileText,
-  Image as ImageIcon,
-  Film,
-  FileSpreadsheet,
-  RefreshCw
-} from 'lucide-react';
 import axios from 'axios';
+import { StationHealthHeader } from '../../components/dashboard/StationHealthHeader';
+import { StationProcessOverview } from '../../components/dashboard/StationProcessOverview';
+import { PumpStatusCardsRow } from '../../components/dashboard/PumpStatusCard';
+import { AIPredictionCard } from '../../components/dashboard/AIPredictionCard';
+import { FailureProgressionBar } from '../../components/dashboard/FailureProgressionBar';
+import { SensorMapTable } from '../../components/dashboard/SensorMapTable';
+import { ConditionTrendChart } from '../../components/dashboard/ConditionTrendChart';
+import { RecentAlertsList } from '../../components/dashboard/RecentAlertsList';
+import { SensorPopupModal } from '../../components/dashboard/SensorPopupModal';
+import { PumpDetailModal } from '../../components/dashboard/PumpDetailModal';
+import { ManualMeasurementModal } from '../../components/dashboard/ManualMeasurementModal';
+import { PumpData, SensorPointData } from '../../components/dashboard/PumpVisualization';
+import { ShieldAlert, ArrowRight, ScrollText } from 'lucide-react';
+import { PumpOverviewPage } from './PumpOverviewPage';
+import { AdminTab } from '../../components/AdminSidebar';
+import { AdminDashboardMobile } from '../../components/dashboard/mobile/AdminDashboardMobile';
 
-export const AdminDashboard: React.FC = () => {
-  const { theme } = useTheme();
-  const [stats, setStats] = useState<any>(null);
-  const [allFiles, setAllFiles] = useState<any[]>([]);
-  const [filterType, setFilterType] = useState<string>('all');
-  const [isLoading, setIsLoading] = useState(false);
+export interface AdminDashboardProps {
+  onNavigateTab?: (tab: AdminTab) => void;
+  onNavigateToAnalytics?: (slotCode: string, pointKey: string) => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  onNavigateTab,
+  onNavigateToAnalytics
+}) => {
+  const [stationData, setStationData] = useState<any>(null);
+  const [slots, setSlots] = useState<PumpData[]>([]);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [includeSynthetic, setIncludeSynthetic] = useState(true);
 
-  const fetchStats = async () => {
+  // Modal states
+  const [selectedPumpForDetail, setSelectedPumpForDetail] = useState<PumpData | null>(null);
+  const [selectedSensorPopup, setSelectedSensorPopup] = useState<{
+    pump: PumpData;
+    sensorKey: 'motorNde' | 'motorDe' | 'pumpDe' | 'pumpNde';
+    data: SensorPointData;
+  } | null>(null);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+
+  const fetchDashboardData = async () => {
     try {
-      const res = await axios.get('/api/dashboard/stats');
+      const res = await axios.get('/api/monitoring/overview');
       if (res.data.success) {
-        setStats(res.data.stats);
+        setStationData(res.data.data.station);
+        setSlots(res.data.data.slots);
+        setAiAnalysis(res.data.data.aiAnalysis);
+        setAlerts(res.data.data.alerts);
       }
     } catch (err) {
-      console.error('Failed to load stats:', err);
-    }
-  };
-
-  const fetchFiles = async (type = filterType) => {
-    setIsLoading(true);
-    try {
-      const res = await axios.get(`/api/upload/list?limit=50&mediaType=${type}`);
-      if (res.data.success) {
-        setAllFiles(res.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to load files:', err);
+      console.error('Failed to load overview data:', err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await Promise.all([fetchStats(), fetchFiles()]);
-    setTimeout(() => setIsRefreshing(false), 400);
-  };
-
-  const handleDeleteFile = async (id: number) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus berkas ini dari disk dan database?')) {
-      return;
-    }
-    try {
-      await axios.delete(`/api/upload/${id}`);
-      fetchFiles();
-      fetchStats();
-    } catch (err) {
-      alert('Gagal menghapus file');
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchStats();
-    fetchFiles('all');
+    fetchDashboardData();
   }, []);
 
-  const handleFilterChange = (type: string) => {
-    setFilterType(type);
-    fetchFiles(type);
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchDashboardData();
   };
 
-  const formatBytes = (bytes: number) => {
-    if (!bytes || bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const handleSelectPump = (pump: PumpData) => {
+    setSelectedPumpForDetail(pump);
   };
 
-  const getMediaTypeBadge = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case 'images':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
-            <ImageIcon className="w-3 h-3" /> Images
-          </span>
-        );
-      case 'documents':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-            <FileText className="w-3 h-3" /> Documents
-          </span>
-        );
-      case 'videos':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30">
-            <Film className="w-3 h-3" /> Videos
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-400/30">
-            <FileSpreadsheet className="w-3 h-3" /> {type || 'Others'}
-          </span>
-        );
-    }
+  const handleSelectSensor = (
+    pump: PumpData,
+    sensorKey: 'motorNde' | 'motorDe' | 'pumpDe' | 'pumpNde',
+    data: SensorPointData
+  ) => {
+    setSelectedSensorPopup({ pump, sensorKey, data });
   };
+
+  // Find Pump C for highlighted cards
+  const pumpC = slots.find((s) => s.slot_code === 'C') || slots[2] || null;
+
+  if (isLoading && !slots.length) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-mono text-slate-500">Memuat Kondisi Stasiun Batang...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If a pump is selected, render the dedicated FULL PUMP OVERVIEW (Investigation Workspace)
+  if (selectedPumpForDetail) {
+    return (
+      <>
+        <PumpOverviewPage
+          pump={selectedPumpForDetail}
+          allPumps={slots}
+          onBack={() => setSelectedPumpForDetail(null)}
+          onSelectOtherPump={(p) => setSelectedPumpForDetail(p)}
+          onOpenManualInput={() => setIsManualModalOpen(true)}
+          onNavigateToAnalytics={onNavigateToAnalytics}
+        />
+
+        {/* Manual Measurement Field Entry Modal */}
+        <ManualMeasurementModal
+          isOpen={isManualModalOpen}
+          onClose={() => setIsManualModalOpen(false)}
+          onSuccess={() => {
+            fetchDashboardData();
+          }}
+        />
+      </>
+    );
+  }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* 4 KPI Cards (Clean, high contrast, adapts to light/dark) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Berkas */}
-        <div className={`rounded-2xl p-5 border transition-all flex items-center justify-between ${
-          theme === 'dark' 
-            ? 'bg-[#0E1726]/90 border-slate-800 shadow-lg text-white' 
-            : 'bg-white border-slate-200/80 shadow-sm text-slate-800 hover:shadow-md'
-        }`}>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Berkas</p>
-            <p className={`text-2xl sm:text-3xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              {stats?.totalFiles || 0}
-            </p>
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              Tersimpan di uploads/
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-cyan-400 flex items-center justify-center border border-blue-500/20">
-            <HardDrive className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 2: Penggunaan Storage */}
-        <div className={`rounded-2xl p-5 border transition-all flex items-center justify-between ${
-          theme === 'dark' 
-            ? 'bg-[#0E1726]/90 border-slate-800 shadow-lg text-white' 
-            : 'bg-white border-slate-200/80 shadow-sm text-slate-800 hover:shadow-md'
-        }`}>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kapasitas Storage</p>
-            <p className={`text-2xl sm:text-3xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              {formatBytes(stats?.totalBytes || 0)}
-            </p>
-            <p className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-              Struktur YYYY/MM/DD
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/20">
-            <Layers className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 3: Database MySQL */}
-        <div className={`rounded-2xl p-5 border transition-all flex items-center justify-between ${
-          theme === 'dark' 
-            ? 'bg-[#0E1726]/90 border-slate-800 shadow-lg text-white' 
-            : 'bg-white border-slate-200/80 shadow-sm text-slate-800 hover:shadow-md'
-        }`}>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status MySQL</p>
-            <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-              Connected
-            </p>
-            <p className="text-[11px] text-slate-400 mt-1">DB: rasta_it_db (port 3306)</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-            <Database className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 4: Pengguna Terdaftar */}
-        <div className={`rounded-2xl p-5 border transition-all flex items-center justify-between ${
-          theme === 'dark' 
-            ? 'bg-[#0E1726]/90 border-slate-800 shadow-lg text-white' 
-            : 'bg-white border-slate-200/80 shadow-sm text-slate-800 hover:shadow-md'
-        }`}>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Peran Terdaftar</p>
-            <p className={`text-2xl sm:text-3xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              {stats?.userStats?.reduce((acc: number, curr: any) => acc + curr.count, 0) || 2} Akun
-            </p>
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              1 Admin, 1 Petugas
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
+    <div className="animate-fadeIn">
+      {/* MOBILE DASHBOARD EXPERIENCE (< 768px): STATUS -> ATTENTION -> PUMPS -> AI -> TREND -> ALERTS */}
+      <div className="block md:hidden">
+        <AdminDashboardMobile
+          stationData={stationData}
+          slots={slots}
+          aiAnalysis={aiAnalysis}
+          alerts={alerts}
+          onSelectPump={handleSelectPump}
+          onSelectSensor={handleSelectSensor}
+          onOpenManualInput={() => setIsManualModalOpen(true)}
+          onNavigateToAnalytics={onNavigateToAnalytics}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
       </div>
 
-      {/* Audit & Management Table Card */}
-      <div className={`rounded-2xl p-5 sm:p-6 border transition-all ${
-        theme === 'dark' 
-          ? 'bg-[#0E1726]/90 border-slate-800 shadow-xl' 
-          : 'bg-white border-slate-200/80 shadow-sm'
-      }`}>
-        {/* Table Header Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div>
-            <h2 className={`text-base font-bold flex items-center gap-2 ${
-              theme === 'dark' ? 'text-white' : 'text-slate-900'
-            }`}>
-              <ShieldCheck className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-              Audit Berkas Terenkripsi (uploads/)
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Daftar seluruh berkas yang diunggah petugas beserta enkripsi nama acak unik dan jalurnya
-            </p>
-          </div>
+      {/* DESKTOP DASHBOARD EXPERIENCE (>= 768px): 100% FLUID FULL WIDTH */}
+      <div className="hidden md:block space-y-5 w-full">
+        {/* 1. STATION HEALTH HEADER */}
+        <StationHealthHeader
+          stationName={stationData?.name || 'Booster Pump Batang HO'}
+          overallCondition={stationData?.overallCondition || 'NORMAL'}
+          runningPumpsCount={stationData?.runningPumpsCount || 2}
+          totalPumpsCount={stationData?.totalPumpsCount || 4}
+          warningCount={stationData?.warningCount || 1}
+          criticalCount={stationData?.criticalCount || 0}
+          lastMeasurementTime={stationData?.lastMeasurementAt || '19 Sep 2026 • 14:00'}
+          freshnessMinutes={stationData?.freshnessMinutes || 42}
+          nextExpectedTime={stationData?.nextExpectedAt || '15:00'}
+          includeSynthetic={includeSynthetic}
+          onToggleSynthetic={(val) => setIncludeSynthetic(val)}
+          onOpenManualInput={() => setIsManualModalOpen(true)}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            {/* Filter Pills */}
-            <div className={`flex items-center gap-1 p-1 rounded-xl border ${
-              theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
-            }`}>
-              {['all', 'images', 'documents', 'videos', 'others'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => handleFilterChange(t)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
-                    filterType === t
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {t === 'all' ? 'Semua' : t}
-                </button>
-              ))}
+        {/* 2. PROMINENT ATTENTION REQUIRED CALLOUT BANNER */}
+        {pumpC && pumpC.health === 'WARNING' && (
+          <div className="rounded-3xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 shadow-sm flex flex-wrap items-center justify-between gap-4 animate-pulse">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-900">
+                    ATTENTION REQUIRED
+                  </span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white">
+                    Pump C Menunjukkan Anomali Getaran Progresif
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                  Kondisi <b className="text-amber-500">WARNING</b> • Estimasi Sisa Umur: <b className="font-mono">~46 jam</b> • Dugaan Penyebab: <b className="text-slate-800 dark:text-slate-100">Coupling Misalignment</b>
+                </p>
+              </div>
             </div>
 
-            {/* Quick Refresh Icon */}
             <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              title="Segarkan Berkas"
-              className={`p-2 rounded-xl border transition-colors ${
-                theme === 'dark'
-                  ? 'border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300'
-                  : 'border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600'
-              }`}
+              type="button"
+              onClick={() => handleSelectPump(pumpC)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black hover:bg-amber-400 transition-colors shadow-md shadow-amber-500/20"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Buka Analisis Diagnostik</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+        )}
+
+        {/* 3. STATION PROCESS OVERVIEW WITH 4 SVG PUMPS */}
+        <StationProcessOverview
+          slots={slots}
+          selectedPump={selectedPumpForDetail}
+          onSelectPump={handleSelectPump}
+          onSelectSensor={handleSelectSensor}
+          incomingPressurePsi={stationData?.incomingPressurePsi || 72.4}
+          dischargePressurePsi={stationData?.dischargePressurePsi || 72.4}
+          flowPct={stationData?.flowPct || 67.4}
+        />
+
+        {/* 4. FOUR PUMP STATUS CARDS ROW (OPERATIONAL STATE AWARE) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Status Operasional Unit Pompa (Operational States & Sequence)
+            </h4>
+            <span className="text-[11px] text-slate-400">
+              Standby = Rotasi Standar (Beban 0% & Getaran Rendah Wajar)
+            </span>
+          </div>
+          <PumpStatusCardsRow
+            slots={slots}
+            onSelectPump={handleSelectPump}
+          />
+        </div>
+
+        {/* 5. DIAGNOSTICS & MULTI-SENSOR MATRIX GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Left Column: AI Prediction Card & Progression Bar */}
+          <div className="lg:col-span-5 space-y-4">
+            <AIPredictionCard
+              flaggedPump={aiAnalysis?.flaggedPump || 'Pump C'}
+              currentCondition={aiAnalysis?.currentCondition || 'WARNING'}
+              failureProbability={aiAnalysis?.failureProbability || 71}
+              predictedTimeToFailureHours={aiAnalysis?.predictedTimeToFailureHours || 46}
+              estimatedFailureAt={aiAnalysis?.estimatedFailureAt || '21 Sep 2026 • 12:00'}
+              likelyFailureMode={aiAnalysis?.likelyFailureMode || 'Coupling Misalignment'}
+              confidence={aiAnalysis?.confidence || 82}
+              basisFactors={aiAnalysis?.basisFactors}
+              disclaimer={aiAnalysis?.disclaimer}
+              onViewAnalysis={() => pumpC && handleSelectPump(pumpC)}
+            />
+
+            <FailureProgressionBar
+              currentStage={pumpC?.health === 'WARNING' ? 'WARNING' : 'NORMAL'}
+              degradingDurationHours={aiAnalysis?.degradationDurationHours || 38}
+              warningDetectedHoursAgo={aiAnalysis?.warningDetectedHoursAgo || 8}
+              pumpName={aiAnalysis?.flaggedPump || 'Pump C'}
+            />
+          </div>
+
+          {/* Right Column: Multi-Sensor Vibration Map & Temperature Overview */}
+          <div className="lg:col-span-7">
+            {pumpC && (
+              <SensorMapTable
+                pump={pumpC}
+                onSelectPoint={(code) => {
+                  alert(`Membuka riwayat rinci titik ukur: ${code} pada Pompa C`);
+                }}
+              />
+            )}
           </div>
         </div>
 
-        {/* Table Content */}
-        {isLoading ? (
-          <div className="py-16 text-center text-slate-400 text-xs">
-            <div className="w-7 h-7 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            Memuat data audit berkas...
+        {/* 6. MAIN CONDITION TREND CHART */}
+        <ConditionTrendChart
+          initialPump="C"
+        />
+
+        {/* 7. RECENT OPERATIONAL ALERTS */}
+        <RecentAlertsList
+          alerts={alerts}
+          onSelectAlert={(alt) => {
+            if (alt.pump.includes('C') && pumpC) {
+              handleSelectPump(pumpC);
+            }
+          }}
+        />
+
+        {/* 8. RECENT SYSTEM ACTIVITY & AUDIT (Requirement 35) */}
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B132B]/80 p-5 shadow-sm backdrop-blur-md">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3.5">
+            <div className="flex items-center gap-2">
+              <ScrollText className="w-4 h-4 text-cyan-500" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                RECENT SYSTEM ACTIVITY (AUDIT LOG)
+              </h3>
+            </div>
+            {onNavigateTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab('activity-log')}
+                className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+              >
+                <span>View All Activity</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-        ) : allFiles.length === 0 ? (
-          <div className={`py-16 text-center text-xs rounded-xl border my-4 ${
-            theme === 'dark' ? 'bg-slate-900/40 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-          }`}>
-            Tidak ada berkas dengan filter <span className="font-bold text-cyan-600 dark:text-cyan-400">"{filterType}"</span>.
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between font-mono text-[11px] text-slate-400">
+                <span>14:03</span>
+                <span className="text-amber-500 font-bold">WARNING</span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white">Andi Pratama</div>
+              <div className="text-[11px] text-slate-500 truncate">Recorded Pump C P-DE-H (1.82 mm/s)</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between font-mono text-[11px] text-slate-400">
+                <span>13:52</span>
+                <span className="text-emerald-500 font-bold">LOGIN</span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white">Andi Pratama</div>
+              <div className="text-[11px] text-slate-500 truncate">Sesi login operator lapangan aktif</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between font-mono text-[11px] text-slate-400">
+                <span>12:40</span>
+                <span className="text-cyan-500 font-bold">IMPORT</span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white">Administrator Utama</div>
+              <div className="text-[11px] text-slate-500 truncate">Imported dataset telemetri tahunan</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between font-mono text-[11px] text-slate-400">
+                <span>11:20</span>
+                <span className="text-purple-500 font-bold">SERVICE</span>
+              </div>
+              <div className="font-bold text-slate-900 dark:text-white">Ferry Hartanto, S.T.</div>
+              <div className="text-[11px] text-slate-500 truncate">Inspeksi & pelumasan Pump B</div>
+            </div>
           </div>
-        ) : (
-          <div className={`overflow-x-auto rounded-xl border mt-4 ${
-            theme === 'dark' ? 'border-slate-800' : 'border-slate-200'
-          }`}>
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className={`border-b font-bold tracking-wider ${
-                  theme === 'dark' 
-                    ? 'bg-slate-900/80 text-slate-400 border-slate-800' 
-                    : 'bg-slate-50 text-slate-600 border-slate-200'
-                }`}>
-                  <th className="py-3 px-4">TIPE</th>
-                  <th className="py-3 px-4">NAMA ASLI</th>
-                  <th className="py-3 px-4">NAMA TERENKRIPSI DI DISK</th>
-                  <th className="py-3 px-4">JALUR RELATIF (YYYY/MM/DD)</th>
-                  <th className="py-3 px-4">UKURAN</th>
-                  <th className="py-3 px-4">UPLOADER</th>
-                  <th className="py-3 px-4 text-center">AKSI</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${theme === 'dark' ? 'divide-slate-800/80' : 'divide-slate-200'}`}>
-                {allFiles.map((file) => (
-                  <tr 
-                    key={file.id} 
-                    className={`transition-colors ${
-                      theme === 'dark' ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <td className="py-3 px-4">
-                      {getMediaTypeBadge(file.media_type)}
-                    </td>
-                    <td className={`py-3 px-4 font-semibold max-w-[180px] truncate ${
-                      theme === 'dark' ? 'text-white' : 'text-slate-800'
-                    }`}>
-                      {file.original_name}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[11px] text-slate-500 max-w-[200px] truncate">
-                      {file.stored_name}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[11px] text-cyan-600 dark:text-cyan-300 max-w-[220px] truncate font-medium">
-                      {file.relative_path}
-                    </td>
-                    <td className="py-3 px-4 text-slate-500 dark:text-slate-300 font-medium">
-                      {formatBytes(file.file_size)}
-                    </td>
-                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
-                      {file.uploader_name || 'Petugas'}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <a
-                          href={file.file_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Buka Berkas Asli"
-                          className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 transition-colors"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                        <button
-                          onClick={() => handleDeleteFile(file.id)}
-                          title="Hapus Berkas dari Disk & DB"
-                          className="p-1.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-500/30 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* ================= MODALS ================= */}
+
+      {/* Sensor Point Interactive Popup */}
+      {selectedSensorPopup && (
+        <SensorPopupModal
+          pump={selectedSensorPopup.pump}
+          sensorKey={selectedSensorPopup.sensorKey}
+          sensorData={selectedSensorPopup.data}
+          onClose={() => setSelectedSensorPopup(null)}
+          onViewAnalytics={(slotCode, pointKey) => {
+            const pumpTarget = selectedSensorPopup.pump;
+            setSelectedSensorPopup(null);
+            if (onNavigateToAnalytics) {
+              onNavigateToAnalytics(slotCode, pointKey);
+            } else if (onNavigateTab) {
+              onNavigateTab('sensors');
+            } else {
+              handleSelectPump(pumpTarget);
+            }
+          }}
+        />
+      )}
+
+      {/* Pump Detail In-depth Modal */}
+      {selectedPumpForDetail && (
+        <PumpDetailModal
+          pump={selectedPumpForDetail}
+          onClose={() => setSelectedPumpForDetail(null)}
+        />
+      )}
+
+      {/* Manual Measurement Field Entry Modal */}
+      <ManualMeasurementModal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        onSuccess={() => {
+          fetchDashboardData();
+        }}
+      />
     </div>
   );
 };

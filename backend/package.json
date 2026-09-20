@@ -1,12 +1,16 @@
 {
   "name": "rasta-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Fastify Backend for RASTA IT COM",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "db:migrate": "tsx src/database/runMigrations.ts",
+    "db:seed": "tsx src/database/seeds/seedMasterSensors.ts",
+    "db:import-sensors": "tsx src/scripts/importSensorCsv.ts"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",

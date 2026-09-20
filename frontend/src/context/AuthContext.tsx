@@ -5,7 +5,7 @@ export interface User {
   username: string;
   name: string;
   email?: string;
-  role: 'admin' | 'petugas';
+  role: 'admin' | 'engineer' | 'operator' | 'petugas';
   status?: string;
 }
 

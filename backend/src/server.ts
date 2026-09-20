@@ -8,6 +8,9 @@ import { testDbConnection } from './config/database.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
+import { monitoringRoutes } from './modules/monitoring/monitoring.routes.js';
+import { userRoutes } from './modules/users/user.routes.js';
+import { auditRoutes } from './modules/audit/audit.routes.js';
 
 const fastify = Fastify({
   logger: true,
@@ -52,6 +55,9 @@ async function main() {
     await fastify.register(authRoutes, { prefix: '/api/auth' });
     await fastify.register(uploadRoutes, { prefix: '/api/upload' });
     await fastify.register(dashboardRoutes, { prefix: '/api/dashboard' });
+    await fastify.register(monitoringRoutes, { prefix: '/api/monitoring' });
+    await fastify.register(userRoutes, { prefix: '/api/users' });
+    await fastify.register(auditRoutes, { prefix: '/api/audit-logs' });
 
     // 5. Test MySQL Connection
     await testDbConnection();
